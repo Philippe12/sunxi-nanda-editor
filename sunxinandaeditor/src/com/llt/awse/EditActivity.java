@@ -18,17 +18,21 @@ package com.llt.awse;
 
 import java.util.Locale;
 
-import com.lolet.nandaedit.R;
+import com.spazedog.lib.rootfw3.RootFW;
+import com.spazedog.lib.rootfw3.extenders.FileExtender.File;
+import com.spazedog.lib.rootfw3.extenders.FilesystemExtender.Device;
 
 import android.app.ActionBar;
-import android.app.FragmentTransaction;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.app.NavUtils;
+import android.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.Gravity;
@@ -38,6 +42,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
+
+//import com.spazedog.lib.rootfw3.RootFW;
+
 
 public class EditActivity extends FragmentActivity implements ActionBar.TabListener {
 
@@ -53,8 +61,6 @@ public class EditActivity extends FragmentActivity implements ActionBar.TabListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
-
-
 
         // Set up the action bar.
         final ActionBar actionBar = getActionBar();
@@ -89,9 +95,106 @@ public class EditActivity extends FragmentActivity implements ActionBar.TabListe
                             .setText(mSectionsPagerAdapter.getPageTitle(i))
                             .setTabListener(this));
         }
+        
+
+        if( !Build.HARDWARE.equals("sun4i") && !Build.HARDWARE.equals("sun5i") && 
+        		!Build.HARDWARE.equals("sun6i") && !Build.HARDWARE.equals("sun7i")) 
+        {
+        	Log.e(TAG, "Unknown hardware '" + Build.HARDWARE + "' ! Are you its Allwinner?");
+        	final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+			alertDialog.setTitle("Error!");
+			alertDialog.setMessage("Unknown hardware detected. Further actions may damage device.\nDo you want to continue?");
+			alertDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Yes", new DialogInterface.OnClickListener() {
+			   @Override
+			public void onClick(DialogInterface dialog, int which) {
+			     alertDialog.dismiss();
+			   }
+			});
+			alertDialog.setButton(DialogInterface.BUTTON_NEGATIVE, "Nope!", new DialogInterface.OnClickListener() {
+				   @Override
+				public void onClick(DialogInterface dialog, int which) {
+				     alertDialog.dismiss();
+				     finish();
+				   }
+				});
+			alertDialog.show();	
+        }
+        
+// Check root access...
+        final RootFW root = new RootFW(true);
+
+        if (root.connect()) {
+            if(!root.isRoot())
+            {
+            	final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+    			alertDialog.setTitle("Error!");
+    			alertDialog.setMessage("App needs root access to work!");
+    			alertDialog.setButton(DialogInterface.BUTTON_NEUTRAL, "OK", new DialogInterface.OnClickListener() {
+    			   @Override
+    			public void onClick(DialogInterface dialog, int which) {
+    			     alertDialog.dismiss();
+    			     finish();
+    			   }
+    			});
+    			alertDialog.show();	
+            }
+            // Try to remount root dir\=
+            if(root.filesystem("rootfs").addMount("/", new String[] {"rw","remount"}))
+            {
+            	Log.i(TAG,"Succesfully remounted root dir!");
+            }
+            
+            //Create AWeSomE temp directory
+            
+            File f = root.file("/mnt/awse");
+            f.createDirectory();
+            	Log.v(TAG,"Trying to mount bootloader partition...");
+            	//int res = root.shell().run("busybox mount -oro,loop -tvfat /dev/block/nanda /mnt/awse").getResultCode();
+            	if(root.filesystem("/dev/block/nanda").addMount("/mnt/awse","vfat",new String[] {"loop"}))
+            		Log.v(TAG, "Successfully mounted!");
+            	else if(root.filesystem("/dev/block/nanda").isMounted())
+            		Log.v(TAG, "Device is already mounted!");
+            	else
+            	{
+                	final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+        			alertDialog.setTitle("Error!");
+        			alertDialog.setMessage("Couldn't mount the device. Try to update su binary (Download SuperSU or SuperUser)!");
+        			alertDialog.setButton(DialogInterface.BUTTON_NEUTRAL, "OK", new DialogInterface.OnClickListener() {
+        			   @Override
+        			public void onClick(DialogInterface dialog, int which) {
+        			     alertDialog.dismiss();
+        			     //Use rmdir to prevent from important files removal!
+        			     root.shell().run("rmdir /mnt/awse");
+        			     finish();
+        			   }
+        			});
+        			alertDialog.show();	
+            	}
+        }
     }
 
     @Override
+	protected void onDestroy() {
+		// Clean up mounted point
+    	
+        final RootFW root = new RootFW(true);
+
+        if (root.connect()) {
+            if(root.isRoot())
+            {
+            	if(root.filesystem("/dev/block/nanda").isMounted())
+            	{
+            		Log.v(TAG, "Unmounting device...");
+            		if(root.filesystem("/dev/block/nanda").removeMount())
+            		//Use rmdir to prevent from important files removal in case of unmount failure!
+   			     	root.shell().run("rmdir /mnt/awse");
+            	}
+            }
+        }
+		super.onDestroy();
+	}
+
+	@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.edit, menu);
@@ -102,12 +205,10 @@ public class EditActivity extends FragmentActivity implements ActionBar.TabListe
     public boolean onMenuItemSelected(int featureId, MenuItem item)
     {
         switch(item.getItemId()) {
-            case R.id.exit_menu:
+            case R.id.menu_exit:
                 finish();
                 break;
-            case R.id.settings_menu:
-                Log.v(TAG,"TODO: Add setttings menu");
-                lAddTab();
+            case R.id.menu_reload:
                 break;
         }
         return super.onMenuItemSelected(featureId, item);
@@ -137,15 +238,13 @@ public class EditActivity extends FragmentActivity implements ActionBar.TabListe
                         .setText(mSectionsPagerAdapter.getPageTitle(nSections))
                         .setTabListener(mTabListener));
         ++nSections;
+        mSectionsPagerAdapter.notifyDataSetChanged();
 
     }
 
-    /**
-     * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-     * one of the sections/tabs/pages.
-     */
+    
     public class SectionsPagerAdapter extends FragmentPagerAdapter {
-
+    	
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
         }
@@ -153,13 +252,12 @@ public class EditActivity extends FragmentActivity implements ActionBar.TabListe
 
         @Override
         public Fragment getItem(int position) {
-            // getItem is called to instantiate the fragment for the given page.
-            // Return a DummySectionFragment (defined as a static inner class
-            // below) with the page number as its lone argument.
-            Fragment fragment = new DummySectionFragment();
-            Bundle args = new Bundle();
-            args.putInt(DummySectionFragment.ARG_SECTION_NUMBER, position + 1);
-            fragment.setArguments(args);
+        	Fragment fragment = null;
+        	
+    		fragment = new TabSectionFragment();
+    		Bundle args = new Bundle();
+    		args.putInt(TabSectionFragment.ARG_SECTION_NUMBER, position + 1);
+    		fragment.setArguments(args);
             return fragment;
         }
 
@@ -175,8 +273,9 @@ public class EditActivity extends FragmentActivity implements ActionBar.TabListe
                     return getString(R.string.main_section);
                 case 1:
                     return "General";
+                default:
+                	return ""+ position;
             }
-            return null;
         }
     }
 
@@ -184,22 +283,31 @@ public class EditActivity extends FragmentActivity implements ActionBar.TabListe
      * A dummy fragment representing a section of the app, but that simply
      * displays dummy text.
      */
-    public static class DummySectionFragment extends Fragment {
+    public static class TabSectionFragment extends Fragment {
         /**
          * The fragment argument representing the section number for this
          * fragment.
          */
         public static final String ARG_SECTION_NUMBER = "section_number";
 
-        public DummySectionFragment() {
+        public TabSectionFragment() {
         }
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_edit_dummy, container, false);
-            TextView dummyTextView = (TextView) rootView.findViewById(R.id.section_label);
-            dummyTextView.setText(Integer.toString(getArguments().getInt(ARG_SECTION_NUMBER)));
+        	int nSection = getArguments().getInt(ARG_SECTION_NUMBER);
+        	View rootView = null;
+        	switch(nSection)
+        	{
+        		case 1:
+        			rootView = inflater.inflate(R.layout.fragment_config_entry_text, container, false);
+        		break;
+        		default:
+        			rootView = inflater.inflate(R.layout.fragment_edit_dummy, container, false);
+        			TextView dummyTextView = (TextView) rootView.findViewById(R.id.section_label);
+        			dummyTextView.setText(""+ nSection);
+        	}
             return rootView;
         }
     }
