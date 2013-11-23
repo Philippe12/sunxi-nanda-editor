@@ -16,10 +16,10 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:choiceMode="singleChoice"
-        android:divider="#666"
-        android:dividerHeight="1dp"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="0dp"
         android:background="#333"
-        android:paddingLeft="15sp"
-        android:paddingRight="15sp"
+        android:paddingLeft="15sp"    
+        android:paddingRight="5sp"
        />
 </android.support.v4.widget.DrawerLayout> 

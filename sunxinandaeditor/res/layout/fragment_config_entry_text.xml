@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/entry_str"
-    android:layout_width="match_parent"
+    android:layout_width="fill_parent"
     android:layout_height="wrap_content"
+    android:layout_gravity="fill_horizontal"
     android:gravity="center_horizontal"
     android:orientation="horizontal" >
 
-    <TextView 
+    <TextView
         android:id="@+id/t_entry"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="left"
-        android:minWidth="250dp"
+        android:minWidth="200dp"
         android:text="Entry" />
 
     <EditText
@@ -19,9 +20,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:autoLink="none"
-        android:gravity="left"
+        android:gravity="right"
         android:maxLength="256"
         android:maxLines="1"
-        android:minWidth="200dp"
+        android:minWidth="300dp"
         android:singleLine="true" />
 </LinearLayout>
