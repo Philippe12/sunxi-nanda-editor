@@ -16,6 +16,8 @@
 
 package com.llt.awse;
 
+import com.crashlytics.android.Crashlytics;
+import java.util.ArrayList;
 import java.util.Locale;
 
 import com.spazedog.lib.rootfw3.RootFW;
@@ -34,6 +36,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
+import android.support.v4.widget.DrawerLayout;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -41,6 +44,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -50,57 +56,66 @@ import android.widget.Toast;
 public class EditActivity extends FragmentActivity implements ActionBar.TabListener {
 
 
-    SectionsPagerAdapter mSectionsPagerAdapter;
-    ViewPager mViewPager;
-    int nSections = 1;
-
-    final String TAG = "AW-SE";
+    private SectionsPagerAdapter mSectionsPagerAdapter;
+    private ViewPager mViewPager;
+    public int nSections = 1;
+    private MenuItem mStatusAction;
+    final static String TAG = "AW-SE";
     final ActionBar.TabListener mTabListener = this;
+    private Boolean bReloading = false;
+    final private Context mContext = this;
+    private static LayoutInflater mInflater;
+    private ArrayList<LinearLayout> aSections = new ArrayList<LinearLayout>();
+    
+    private DrawerLayout mDrawerLayout;
+    private ListView mDrawerList;
+    
+    @Override
+	protected void onDestroy() {
+		// Clean up mounted point
+    	
+        final RootFW root = new RootFW(true);
 
+        if (root.connect()) {
+            if(root.isRoot())
+            {
+            	if(root.filesystem("/dev/block/nanda").isMounted())
+            	{
+            		Log.v(TAG, "Unmounting device...");
+            		if(root.filesystem("/dev/block/nanda").removeMount())
+            		//Use rmdir to prevent from important files removal!
+   			     	root.shell().run("rmdir /mnt/awse");
+            	}
+            }
+        }
+		super.onDestroy();
+	}
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_editor);
-
+        Crashlytics.start(this);
+		setContentView(R.layout.activity_editor);
+        
         // Set up the action bar.
         final ActionBar actionBar = getActionBar();
         actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+        actionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_HOME
+                | ActionBar.DISPLAY_SHOW_TITLE | ActionBar.DISPLAY_SHOW_CUSTOM);
 
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the app.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
-
-        // Set up the ViewPager with the sections adapter.
-        mViewPager = (ViewPager) findViewById(R.id.pager);
-        mViewPager.setAdapter(mSectionsPagerAdapter);
-
-        // When swiping between different sections, select the corresponding
-        // tab. We can also use ActionBar.Tab#select() to do this if we have
-        // a reference to the Tab.
-        mViewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
-            @Override
-            public void onPageSelected(int position) {
-                actionBar.setSelectedNavigationItem(position);
-            }
-        });
-
-        // For each of the sections in the app, add a tab to the action bar.
-        for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
-            // Create a tab with text corresponding to the page title defined by
-            // the adapter. Also specify this Activity object, which implements
-            // the TabListener interface, as the callback (listener) for when
-            // this tab is selected.
-            actionBar.addTab(
-                    actionBar.newTab()
-                            .setText(mSectionsPagerAdapter.getPageTitle(i))
-                            .setTabListener(this));
-        }
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mDrawerList = (ListView) findViewById(R.id.left_drawer);
         
+        mDrawerList.setAdapter(new ArrayAdapter<String>(this,
+                R.layout.drawer_mainlayout, R.id.content_frame, new String[]{"test", "test2", "etc"}));
+        
+        
+//Check if its correct hardware
 
         if( !Build.HARDWARE.equals("sun4i") && !Build.HARDWARE.equals("sun5i") && 
         		!Build.HARDWARE.equals("sun6i") && !Build.HARDWARE.equals("sun7i")) 
         {
-        	Log.e(TAG, "Unknown hardware '" + Build.HARDWARE + "' ! Are you its Allwinner?");
+        	Log.e(TAG, "Unknown hardware '" + Build.HARDWARE + "' ! Are you sure it's an Allwinner device?");
         	final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
 			alertDialog.setTitle("Error!");
 			alertDialog.setMessage("Unknown hardware detected. Further actions may damage device.\nDo you want to continue?");
@@ -171,44 +186,79 @@ public class EditActivity extends FragmentActivity implements ActionBar.TabListe
         			alertDialog.show();	
             	}
         }
+        
+    //Create entries...
+    
+/*        // For each of the sections in the app, add a tab to the action bar.
+        for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
+            // Create a tab with text corresponding to the page title defined by
+            // the adapter. Also specify this Activity object, which implements
+            // the TabListener interface, as the callback (listener) for when
+            // this tab is selected.
+            actionBar.addTab(
+                    actionBar.newTab()
+                            .setText(mSectionsPagerAdapter.getPageTitle(i))
+                            .setTabListener(this));
+        }
+        */
+        
+        // Create the adapter that will return a fragment for each of the three
+        // primary sections of the app.
+        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
+
+        // Set up the ViewPager with the sections adapter.
+        mViewPager = (ViewPager) findViewById(R.id.pager);
+        mViewPager.setAdapter(mSectionsPagerAdapter);
+
+        // When swiping between different sections, select the corresponding
+        // tab. We can also use ActionBar.Tab#select() to do this if we have
+        // a reference to the Tab.
+        mViewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+            @Override
+            public void onPageSelected(int position) {}
+            
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+
+            
+        });
+ 
+        actionBarAddSectionTab();
+       
+        actionBarAddSectionTab();
     }
 
-    @Override
-	protected void onDestroy() {
-		// Clean up mounted point
-    	
-        final RootFW root = new RootFW(true);
-
-        if (root.connect()) {
-            if(root.isRoot())
-            {
-            	if(root.filesystem("/dev/block/nanda").isMounted())
-            	{
-            		Log.v(TAG, "Unmounting device...");
-            		if(root.filesystem("/dev/block/nanda").removeMount())
-            		//Use rmdir to prevent from important files removal in case of unmount failure!
-   			     	root.shell().run("rmdir /mnt/awse");
-            	}
-            }
-        }
-		super.onDestroy();
-	}
 
 	@Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.edit, menu);
+        mStatusAction = menu.findItem(R.id.menu_status);
         return true;
     }
 
     @Override
     public boolean onMenuItemSelected(int featureId, MenuItem item)
     {
-        switch(item.getItemId()) {
+        switch(item.getItemId())
+        {
             case R.id.menu_exit:
                 finish();
                 break;
             case R.id.menu_reload:
+            	if(mStatusAction == null)
+            		return true;
+            	if(!bReloading)
+            	{
+            		mStatusAction.setVisible(true);
+            		mStatusAction.expandActionView();
+            		bReloading = true;
+            	}
+            	else
+            	{
+            		mStatusAction.setVisible(false);
+            		mStatusAction.collapseActionView();
+            		bReloading = false;
+            	}
                 break;
         }
         return super.onMenuItemSelected(featureId, item);
@@ -230,7 +280,7 @@ public class EditActivity extends FragmentActivity implements ActionBar.TabListe
     public void onTabReselected(ActionBar.Tab tab, FragmentTransaction fragmentTransaction) {
     }
 
-    public void lAddTab()
+    public void actionBarAddSectionTab()
     {
         final ActionBar actionBar = getActionBar();
         actionBar.addTab(
@@ -241,9 +291,8 @@ public class EditActivity extends FragmentActivity implements ActionBar.TabListe
         mSectionsPagerAdapter.notifyDataSetChanged();
 
     }
-
     
-    public class SectionsPagerAdapter extends FragmentPagerAdapter {
+	public class SectionsPagerAdapter extends FragmentPagerAdapter {
     	
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
@@ -252,12 +301,11 @@ public class EditActivity extends FragmentActivity implements ActionBar.TabListe
 
         @Override
         public Fragment getItem(int position) {
-        	Fragment fragment = null;
-        	
-    		fragment = new TabSectionFragment();
+        	Fragment fragment = new TabSectionFragment();
     		Bundle args = new Bundle();
     		args.putInt(TabSectionFragment.ARG_SECTION_NUMBER, position + 1);
     		fragment.setArguments(args);
+    		aSections.add(position, (LinearLayout)  fragment.getView());
             return fragment;
         }
 
@@ -269,46 +317,48 @@ public class EditActivity extends FragmentActivity implements ActionBar.TabListe
         @Override
         public CharSequence getPageTitle(int position) {
             switch (position) {
-                case 0:
+                case -1:
                     return getString(R.string.main_section);
-                case 1:
-                    return "General";
                 default:
                 	return ""+ position;
             }
         }
     }
 
-    /**
-     * A dummy fragment representing a section of the app, but that simply
-     * displays dummy text.
-     */
     public static class TabSectionFragment extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
+
+    
         public static final String ARG_SECTION_NUMBER = "section_number";
 
-        public TabSectionFragment() {
+        public TabSectionFragment() 
+        {
         }
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                 Bundle savedInstanceState) {
         	int nSection = getArguments().getInt(ARG_SECTION_NUMBER);
+        	mInflater = inflater;
         	View rootView = null;
         	switch(nSection)
         	{
-        		case 1:
-        			rootView = inflater.inflate(R.layout.fragment_config_entry_text, container, false);
-        		break;
         		default:
-        			rootView = inflater.inflate(R.layout.fragment_edit_dummy, container, false);
-        			TextView dummyTextView = (TextView) rootView.findViewById(R.id.section_label);
+        			Log.i(TAG,"Creating " + nSection);
+        			LinearLayout vRoot = (LinearLayout) inflater.inflate(R.layout.tab_root, container, false);
+        			
+        			for(int i = 0; i<nSection; ++i)
+    				{
+	        			LinearLayout lEntry = (LinearLayout) inflater.inflate(R.layout.fragment_config_entry_text, container, false);    
+	        			vRoot.addView(lEntry);
+        			}
+        			
+        		    return vRoot;
+        		case -1:
+        			rootView = inflater.inflate(R.layout.fragment_edit_footer, container, false);
+        			TextView dummyTextView = (TextView) rootView.findViewById(R.id.entry_desc);
         			dummyTextView.setText(""+ nSection);
+                    return rootView;
         	}
-            return rootView;
         }
     }
 

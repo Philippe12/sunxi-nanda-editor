@@ -1,13 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/frag_text"
-    android:layout_width="wrap_content"
+    android:id="@+id/entry_str"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_gravity="center_horizontal"
     android:gravity="center_horizontal"
     android:orientation="horizontal" >
 
-    <TextView
+    <TextView 
         android:id="@+id/t_entry"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -20,13 +19,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:autoLink="none"
-        android:focusable="false"
-        android:focusableInTouchMode="false"
         android:gravity="left"
         android:maxLength="256"
         android:maxLines="1"
         android:minWidth="200dp"
-        android:singleLine="true"
-        android:text="Value" />
-
+        android:singleLine="true" />
 </LinearLayout>

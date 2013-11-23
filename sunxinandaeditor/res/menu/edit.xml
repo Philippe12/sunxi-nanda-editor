@@ -1,6 +1,13 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <item
+        android:id="@+id/menu_status"
+        android:orderInCategory="1"
+        android:showAsAction="always"
+        android:visible="false"
+        android:actionLayout="@layout/av_progress"
+    />
+    <item
         android:id="@+id/menu_reload"
         android:orderInCategory="100"
         android:showAsAction="never"

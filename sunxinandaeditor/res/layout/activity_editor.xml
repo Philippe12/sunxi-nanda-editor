@@ -1,6 +1,36 @@
-<android.support.v4.view.ViewPager xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:gravity="bottom"
+    android:orientation="horizontal" >
+    
+<android.support.v4.view.ViewPager
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/pager"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".EditActivity" />
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:layout_alignParentTop="true"
+    android:layout_gravity="top"
+    android:layout_marginBottom="30dp"
+    android:scrollbars="vertical"
+    tools:context=".EditActivity" >
+
+</android.support.v4.view.ViewPager>
+
+        <TextView
+            android:id="@id/entry_desc"
+            android:layout_width="fill_parent"
+            android:layout_height="30dp"
+            android:layout_alignParentBottom="true"
+            android:layout_gravity="bottom|left"
+            android:background="#807398FF"
+            android:fadingEdge="horizontal"
+            android:fadingEdgeLength="2dp"
+            android:gravity="center_vertical"
+            android:paddingLeft="5dp"
+            android:text="Item description" />
+         
+        
+</RelativeLayout>
