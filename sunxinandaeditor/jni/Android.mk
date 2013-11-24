@@ -2,7 +2,7 @@ LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE    := sunxi-tools
+LOCAL_MODULE    := libsunxi-tools
 TARGET_ARCH		:= arm
 TARGET_ARCH_ABI := armeabi-v7a
 LOCAL_SRC_FILES :=  ./sunxi-tools/script.c ./sunxi-tools/script_bin.c \

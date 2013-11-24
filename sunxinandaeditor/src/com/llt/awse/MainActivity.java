@@ -187,6 +187,7 @@ public class MainActivity extends Activity {
         // Crashlytics.start(this);
         setContentView(R.layout.main_layout_drawer);
         final ActionBar actionBar = getActionBar();
+        
         actionBar.setTitle(R.string.app_name);
         actionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_HOME
                 | ActionBar.DISPLAY_SHOW_TITLE | ActionBar.DISPLAY_SHOW_CUSTOM);
