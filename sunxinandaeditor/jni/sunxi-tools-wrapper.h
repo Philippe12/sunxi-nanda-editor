@@ -10,21 +10,12 @@
 extern "C"
 {
 #endif
-/*
- * Class:     com_llt_awse_FexUtils
- * Method:    compileFex
- * Signature: (Ljava/io/File;)[Ljava/lang/Byte;
- */
+
 JNIEXPORT jobjectArray JNICALL Java_com_llt_awse_FexUtils_compileFex
   (JNIEnv *, jclass, jobject);
 
-/*
- * Class:     com_llt_awse_FexUtils
- * Method:    decompileBin
- * Signature: (Ljava/io/File;)[Ljava/lang/String;
- */
-JNIEXPORT jstring JNICALL Java_com_llt_awse_FexUtils_decompileBin
-  (JNIEnv *, jclass, jobject);
+JNIEXPORT jbyteArray JNICALL Java_com_llt_awse_FexUtils_decompileBin
+  (JNIEnv *, jclass, jbyteArray, jint);
 
 #ifdef __cplusplus
 }

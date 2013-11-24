@@ -1,6 +1,12 @@
 package com.llt.awse;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Properties;
@@ -20,6 +26,7 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.os.Build;
@@ -132,7 +139,6 @@ public class MainActivity extends Activity {
 	private void unmountLoader()
 	{
 		final RootFW root = new RootFW(true);
-		      
 		if (root.connect())
 		{
 			if(root.isRoot())
@@ -153,10 +159,18 @@ public class MainActivity extends Activity {
 			{
 				Log.w("TAG", "Device hasn't root access -- didn't have a chance to unmount");
 			}
+			root.disconnect();
 		}
 	}
 	  
   
+	private void removeTempFiles()
+	{
+		java.io.File f = new java.io.File("/sdcard/awse/script.bin");
+		if(f.exists())
+			f.delete();
+	}
+	
 	@Override 
 	protected void onPause()
 	{
@@ -169,6 +183,7 @@ public class MainActivity extends Activity {
 	{
 		// Clean up mounted point
 	  	unmountLoader();
+	  	removeTempFiles();
 	  	super.onDestroy();
 	}
   
@@ -184,7 +199,7 @@ public class MainActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) 
     {
         super.onCreate(savedInstanceState);
-        // Crashlytics.start(this);
+        Crashlytics.start(this);
         setContentView(R.layout.main_layout_drawer);
         final ActionBar actionBar = getActionBar();
         
@@ -194,18 +209,23 @@ public class MainActivity extends Activity {
         
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         mDrawerList = (ListView) findViewById(R.id.left_drawer);
-             
+/*             
         AssetManager am = getAssets();        
-        
-        fScript = new Ini();
-        try
-        {
-        	fScript.load(am.open("script.fex"));
-        } catch (IOException e)	{
-			Log.e(TAG, "Cannot load script.fex asset!");
-			e.printStackTrace();
+        byte[] aFexData = {};
+        try {
+        	AssetFileDescriptor afd = am.openFd("script.mp3");
+      
+        	byte[] aBinData = new byte[(int)afd.getLength()];
+        	DataInputStream dis = new DataInputStream(afd.createInputStream());
+        	dis.readFully(aBinData);
+        	aFexData = FexUtils.decompileBin(aBinData, aBinData.length);
+		//	Log.e(TAG, new String(aFexData, "US-ASCII"));
+		 } catch (IOException e1) {
+			Log.e(TAG, "Cannot open script.bin asset!");
+			e1.printStackTrace();
 		}
-             
+        */
+                   
         //Check if it's an Allwinner CPU
         
         if( !Build.HARDWARE.equals("sun4i") && !Build.HARDWARE.equals("sun5i") && 
@@ -231,24 +251,27 @@ public class MainActivity extends Activity {
 			alertDialog.show();	
         }
         
-//TODO: Uncomment that later...
-/*// Check root access...
+// Check root access...
+        
         final RootFW root = new RootFW(true);
 
-        if (root.connect()) {
+        if (root.connect())
+        {
             if(!root.isRoot())
             {
             	final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
     			alertDialog.setTitle("Error!");
     			alertDialog.setMessage("App needs root access to work!");
     			alertDialog.setButton(DialogInterface.BUTTON_NEUTRAL, "OK", new DialogInterface.OnClickListener() {
-    			   @Override
+    			@Override
     			public void onClick(DialogInterface dialog, int which) {
     			     alertDialog.dismiss();
+    			     root.disconnect();
     			     finish();
     			   }
     			});
     			alertDialog.show();	
+    			return;
             }
             // Try to remount root dir\=
             if(root.filesystem("rootfs").addMount("/", new String[] {"rw","remount"}))
@@ -256,15 +279,17 @@ public class MainActivity extends Activity {
             	Log.i(TAG,"Succesfully remounted root dir!");
             }
             
-            //Create AWeSomE temp directory
+            //Create AWeSomE temp directories
             
             File f = root.file("/mnt/awse");
             f.createDirectory();
+            f = root.file("/sdcard/awse");
+            f.createDirectory();
             	Log.v(TAG,"Trying to mount bootloader partition...");
             	//int res = root.shell().run("busybox mount -oro,loop -tvfat /dev/block/nanda /mnt/awse").getResultCode();
-            	if(root.filesystem("/dev/block/nanda").addMount("/mnt/awse","vfat",new String[] {"loop"}))
+            	if(root.filesystem("/dev/block/nanda").addMount("/mnt/awse","vfat",new String[] {"ro"}))
             		Log.v(TAG, "Successfully mounted!");
-            	else if(root.filesystem("/dev/block/nanda").isMounted())
+            	else if(root.filesystem("/mnt/awse").isMounted())
             		Log.v(TAG, "Device is already mounted!");
             	else
             	{
@@ -277,56 +302,139 @@ public class MainActivity extends Activity {
         			     alertDialog.dismiss();
         			     //Use rmdir to prevent from important files removal!
         			     root.shell().run("rmdir /mnt/awse");
+        			     root.disconnect();
         			     finish();
         			   }
         			});
-        			alertDialog.show();	
+        			alertDialog.show();
+        			return;
             	}
-        }
-        */
-
-        // Generate layout for drawer
-        mSections = new DrawerEntry[fScript.size()];
-        Set<String> names = fScript.keySet();
         
-        Iterator<String> it = names.iterator();
         
-        for(int i = 0; it.hasNext(); ++i)
-        {
-        	String szSection = it.next();
-        	mSections[i] = new DrawerEntry(R.drawable.ic_launcher, szSection , fScript.get(szSection).size());
-        }
-        
+	        File fBin = root.file("/mnt/awse/script.bin");
+	        if(!fBin.exists())
+	        {
+	        	final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+    			alertDialog.setTitle("WTF!");
+    			alertDialog.setMessage("Didn't find script.bin file on bootloader partition. This is may cause device brick if you reboot!");
+    			alertDialog.setButton(DialogInterface.BUTTON_NEUTRAL, "OK", new DialogInterface.OnClickListener() {
+    			@Override
+    			public void onClick(DialogInterface dialog, int which) {
+    			     alertDialog.dismiss();
+    			     //Use rmdir to prevent from important files removal!
+    			     root.shell().run("rmdir /mnt/awse");
+    			     root.disconnect();
+    			     finish();
+    			   }
+    			});
+    			alertDialog.show();	
+    			return;
+	        }
+	        if(fBin.copy("/sdcard/awse/script.bin"))
+	        {
+	        	Log.i(TAG, "Successfully copied script to sdcard");
+	        	unmountLoader();
+	        }
+	        else
+	        {
+	        	Log.e(TAG, "Failed to copy script to sdcard!");
+	        	finish();
+	        }
+	        java.io.File binCopy = new java.io.File("/sdcard/awse/script.bin");
+	        FileInputStream fis = null;
+			try
+			{
+				fis = new FileInputStream(binCopy);
+			} catch (FileNotFoundException e1)
+			{
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+	        
+        	byte[] aBinData = new byte[(int)binCopy.length()];
+        	DataInputStream dis = new DataInputStream(fis);
+        	try
+			{
+				dis.readFully(aBinData);
+			} catch (IOException e1)
+			{
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
         	
-  
-        DrawerAdapter da = new DrawerAdapter(this, R.layout.main_layout_drawer_item, mSections);
-             
-        mDrawerList.setAdapter(da);
-        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
-        
-        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.drawable.ic_drawer, R.string.drawer_open, R.string.drawer_close) {
-
-            public void onDrawerOpened(View drawerView) {
-                getActionBar().setTitle("Select a section");  
-            }
-            
-            public void onDrawerClosed(View view) {
-            	if(szTitle == null)
-            		getActionBar().setTitle(R.string.app_name);
-            	else
-            		getActionBar().setTitle(szTitle);
-            }
-        };
-
-        // Set the drawer toggle as the DrawerListener
-        mDrawerLayout.setDrawerListener(mDrawerToggle);
-
-        getActionBar().setDisplayHomeAsUpEnabled(true);
-        getActionBar().setHomeButtonEnabled(true);
-        
-        
-       // findViewById(R.id.content_frame);
-        
+        	if(aBinData.length == 0) return;
+	    	byte[] aFexData = FexUtils.decompileBin(aBinData, aBinData.length);
+	        ByteArrayInputStream is = new ByteArrayInputStream(aFexData);
+	        
+	        fScript = new Ini();
+	        try
+	        {
+	        	fScript.load(is);
+	        	
+	        } catch (IOException e)	{
+				Log.e(TAG, "Cannot parse decompiled script!");
+				e.printStackTrace();
+			}
+	
+	        // Generate layout for drawer
+	        mSections = new DrawerEntry[fScript.size()];
+	        Set<String> names = fScript.keySet();
+	        
+	        Iterator<String> it = names.iterator();
+	        
+	        for(int i = 0; it.hasNext(); ++i)
+	        {
+	        	String szSection = it.next();
+	        	mSections[i] = new DrawerEntry(R.drawable.ic_launcher, szSection , fScript.get(szSection).size());
+	        }
+	        
+	        	
+	  
+	        DrawerAdapter da = new DrawerAdapter(this, R.layout.main_layout_drawer_item, mSections);
+	             
+	        mDrawerList.setAdapter(da);
+	        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
+	        
+	        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.drawable.ic_drawer, R.string.drawer_open, R.string.drawer_close) {
+	
+	            public void onDrawerOpened(View drawerView) {
+	                getActionBar().setTitle("Select a section");  
+	            }
+	            
+	            public void onDrawerClosed(View view) {
+	            	if(szTitle == null)
+	            		getActionBar().setTitle(R.string.app_name);
+	            	else
+	            		getActionBar().setTitle(szTitle);
+	            }
+	        };
+	
+	        // Set the drawer toggle as the DrawerListener
+	        mDrawerLayout.setDrawerListener(mDrawerToggle);
+	
+	        getActionBar().setDisplayHomeAsUpEnabled(true);
+	        getActionBar().setHomeButtonEnabled(true);
+	        
+	        
+	       // findViewById(R.id.content_frame);
+	       root.disconnect();
+       }
+       else
+       {
+    	   	Log.e(TAG, "WTF. Couldn't connect to RootTools!");
+        	final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+			alertDialog.setTitle("WTF!");
+			alertDialog.setMessage("Cant connect to RootTools!");
+			alertDialog.setButton(DialogInterface.BUTTON_NEUTRAL, "OK", new DialogInterface.OnClickListener() {
+			   @Override
+			public void onClick(DialogInterface dialog, int which) {
+			     alertDialog.dismiss();
+			     finish();
+			   }
+			});
+			alertDialog.show();	
+			return;
+        }
 
     }
     
@@ -343,12 +451,14 @@ public class MainActivity extends Activity {
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
         // Sync the toggle state after onRestoreInstanceState has occurred.
+        if(mDrawerToggle != null)
         mDrawerToggle.syncState();
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        if(mDrawerToggle != null)
         mDrawerToggle.onConfigurationChanged(newConfig);
     }
 

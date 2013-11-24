@@ -1,14 +1,14 @@
 package com.llt.awse;
 
-import java.io.File;
+import java.io.InputStream;
 
 public class FexUtils 
 {
-	public static native Byte[] compileFex(File file);
-	public static native String decompileBin(File file);
+	public static native byte[] compileFex(InputStream file);
+	public static native byte[] decompileBin(byte[] data, int len);
 	
 	static 
-	{
-		System.loadLibrary("libsunxi-tools");
+	{ 
+		System.loadLibrary("sunxi-tools");
 	}
 }
