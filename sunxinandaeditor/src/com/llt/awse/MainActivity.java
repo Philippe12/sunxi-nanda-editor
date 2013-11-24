@@ -193,7 +193,7 @@ public class MainActivity extends Activity {
         
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         mDrawerList = (ListView) findViewById(R.id.left_drawer);
-        
+             
         AssetManager am = getAssets();        
         
         fScript = new Ini();
@@ -230,6 +230,7 @@ public class MainActivity extends Activity {
 			alertDialog.show();	
         }
         
+//TODO: Uncomment that later...
 /*// Check root access...
         final RootFW root = new RootFW(true);
 
@@ -302,11 +303,7 @@ public class MainActivity extends Activity {
         mDrawerList.setAdapter(da);
         mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
         
-        mDrawerToggle = new ActionBarDrawerToggle(this,                  /* host Activity */
-                mDrawerLayout,         /* DrawerLayout object */
-                R.drawable.ic_drawer,  /* nav drawer icon to replace 'Up' caret */
-                R.string.drawer_open,  /* "open drawer" description */
-                R.string.drawer_close  /* "close drawer" description */) {
+        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.drawable.ic_drawer, R.string.drawer_open, R.string.drawer_close) {
 
             public void onDrawerOpened(View drawerView) {
                 getActionBar().setTitle("Select a section");  
@@ -325,6 +322,9 @@ public class MainActivity extends Activity {
 
         getActionBar().setDisplayHomeAsUpEnabled(true);
         getActionBar().setHomeButtonEnabled(true);
+        
+        
+       // findViewById(R.id.content_frame);
         
 
     }

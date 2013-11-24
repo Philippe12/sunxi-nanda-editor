@@ -1,19 +1,19 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     >
 
                       <TextView
-            android:id="@id/entry_desc"
-            android:layout_width="match_parent"
-            android:layout_height="30dp"
-            android:layout_gravity="bottom|left"
-            android:background="#807398FF"
-            android:fadingEdge="horizontal"
-            android:fadingEdgeLength="2dp"
-            android:gravity="center_vertical"
-            android:paddingLeft="5dp"
-            android:text="Item description" />
+                          android:id="@+id/awse_status"
+                          android:layout_width="match_parent"
+                          android:layout_height="30dp"
+                          android:layout_gravity="bottom|left"
+                          android:background="#ddd"
+                          android:fadingEdge="horizontal"
+                          android:fadingEdgeLength="2dp"
+                          android:gravity="center_vertical"
+                          android:paddingLeft="5dp"
+                          android:textColor="#000"
+                          android:typeface="serif" />
 
 </LinearLayout>

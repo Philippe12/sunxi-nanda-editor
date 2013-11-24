@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/entry_str"
+    android:id="@+id/entry_int"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
     android:gravity="fill_horizontal"
@@ -17,12 +17,14 @@
 
     <EditText
         android:id="@+id/e_value"
-        android:layout_width="wrap_content"
+        android:layout_width="102dp"
         android:layout_height="wrap_content"
         android:autoLink="none"
         android:gravity="left"
-        android:maxLength="256"
+        android:inputType="number"
+        android:maxLength="8"
         android:maxLines="1"
-        android:minWidth="300dp"
+        android:minWidth="100dp"
         android:singleLine="true" />
+
 </LinearLayout>

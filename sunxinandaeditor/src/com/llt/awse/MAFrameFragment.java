@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -27,16 +28,59 @@ public class MAFrameFragment extends Fragment {
 	   items.setOrientation(LinearLayout.VERTICAL);
 	   ScrollView sv = new ScrollView(inflater.getContext());
 	   sv.addView(items);
+	   // Set padding at bottom so status bar won't overlap
+	   sv.setPadding(0, 0, 0, 28);
 	   for(int n = 0; n<hKeys.length; ++n)
-	   { 
-		   View item = inflater.inflate(R.layout.fragment_config_entry_text, null);
+	   {   
+		   
+		   //Parse value and set correct layout
+		   View item;
+		   if(hVals[n].isEmpty()) 
+		   {
+			   item = inflater.inflate(R.layout.fragment_config_entry_text, null);
+			   TextView cEntry = (TextView) item.findViewById(R.id.t_entry);
+			   cEntry.setText(hKeys[n]);
+			   items.addView(item);
+			   continue;
+		   }
+		   else if(Helpers.isPortEntry(hVals[n]))
+		   {
+			   item = inflater.inflate(R.layout.fragment_config_entry_gpio, null);
+			   TextView cEntry = (TextView) item.findViewById(R.id.t_entry);
+			   cEntry.setText(hKeys[n]);
+			   
+			   String[] subvals = Helpers.getPortValues(hVals[n]);
+			   
+			   EditText cValue = (EditText) item.findViewById(R.id.e_port);
+			   cValue.setText(subvals[0]);
+			   cValue = (EditText) item.findViewById(R.id.e_function);
+			   cValue.setText(subvals[1]);
+			   cValue = (EditText) item.findViewById(R.id.e_resistence);
+			   cValue.setText(subvals[2]);
+			   cValue = (EditText) item.findViewById(R.id.e_drive_str);
+			   cValue.setText(subvals[3]);
+			   cValue = (EditText) item.findViewById(R.id.e_out_lvl);
+			   cValue.setText(subvals[4]);
+			   
+			   items.addView(item);
+			   continue;
+		   }
+		   else if(android.text.TextUtils.isDigitsOnly(hVals[n]))
+		   {
+			   item = inflater.inflate(R.layout.fragment_config_entry_int, null);
+		   }
+		   else
+		   {
+			   item = inflater.inflate(R.layout.fragment_config_entry_text, null);
+		   }
 		   TextView cEntry = (TextView) item.findViewById(R.id.t_entry);
 		   cEntry.setText(hKeys[n]);
-		   TextView cValue = (TextView) item.findViewById(R.id.e_value);
+		   EditText cValue = (EditText) item.findViewById(R.id.e_value);
 		   cValue.setText(hVals[n]);
 		   items.addView(item);
 
 	   }
+	   
 	    return sv;
 	  }
 	  
