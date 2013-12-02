@@ -1,3 +1,19 @@
+/*
+ * Copyright 2013 Bartosz Jankowski
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.llt.awse;
 
 import java.io.ByteArrayInputStream;
@@ -31,6 +47,7 @@ import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.widget.DrawerLayout;
 import android.util.Log;
@@ -46,11 +63,14 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity
+{
   final static String TAG = "AWSE";
+  
   private Boolean bReloading = false;
   private MenuItem mStatusAction;
   private DrawerLayout mDrawerLayout;
+  private DrawerAdapter da;
   private ListView mDrawerList;
   private ActionBarDrawerToggle mDrawerToggle;
   private DrawerEntry[] mSections;
@@ -64,16 +84,8 @@ public class MainActivity extends Activity {
 	  private String szEntry;
 	  private int nCount;
 	  	
-	  	DrawerEntry()
-	  	{
-	  		nIcon = R.drawable.ic_launcher;
-	  		nCount = 0;
-	  		szEntry = "???";
-	  	}
-	  	
 	  	DrawerEntry(int Icon, String Entry, int Count)
 	  	{
-	  		super();
 	  		nIcon = Icon;
 	  		szEntry = Entry; 
 	  		nCount = Count;
@@ -166,9 +178,12 @@ public class MainActivity extends Activity {
   
 	private void removeTempFiles()
 	{
-		java.io.File f = new java.io.File("/sdcard/awse/script.bin");
+		java.io.File f = new java.io.File(Environment.getExternalStorageDirectory().getPath() + "/awse/script.bin");
 		if(f.exists())
+		{
+			Log.i(TAG,"Removed temporatory file on " + Environment.getExternalStorageDirectory().getPath() + "/awse/");
 			f.delete();
+		}
 	}
 	
 	@Override 
@@ -228,7 +243,7 @@ public class MainActivity extends Activity {
                    
         //Check if it's an Allwinner CPU
         
-        if( !Build.HARDWARE.equals("sun4i") && !Build.HARDWARE.equals("sun5i") && 
+        if(!Build.HARDWARE.equals("sun3i") && !Build.HARDWARE.equals("sun4i") && !Build.HARDWARE.equals("sun5i") && 
         		!Build.HARDWARE.equals("sun6i") && !Build.HARDWARE.equals("sun7i")) 
         {
         	Log.e(TAG, "Unknown hardware '" + Build.HARDWARE + "' ! Are you sure it's an Allwinner device?");
@@ -283,7 +298,7 @@ public class MainActivity extends Activity {
             
             File f = root.file("/mnt/awse");
             f.createDirectory();
-            f = root.file("/sdcard/awse");
+            f = root.file(Environment.getExternalStorageDirectory().getPath() + "/awse");
             f.createDirectory();
             	Log.v(TAG,"Trying to mount bootloader partition...");
             	//int res = root.shell().run("busybox mount -oro,loop -tvfat /dev/block/nanda /mnt/awse").getResultCode();
@@ -330,40 +345,61 @@ public class MainActivity extends Activity {
     			alertDialog.show();	
     			return;
 	        }
-	        if(fBin.copy("/sdcard/awse/script.bin"))
+	        if(fBin.copy(Environment.getExternalStorageDirectory().getPath() + "/awse/script.bin", true))
 	        {
 	        	Log.i(TAG, "Successfully copied script to sdcard");
 	        	unmountLoader();
 	        }
 	        else
 	        {
+	        	//TODO: Add an alert msg
 	        	Log.e(TAG, "Failed to copy script to sdcard!");
+        		root.disconnect();
 	        	finish();
 	        }
-	        java.io.File binCopy = new java.io.File("/sdcard/awse/script.bin");
+	        java.io.File binCopy = new java.io.File(Environment.getExternalStorageDirectory().getPath() + "/awse/script.bin");
 	        FileInputStream fis = null;
 			try
 			{
 				fis = new FileInputStream(binCopy);
-			} catch (FileNotFoundException e1)
+			} catch (FileNotFoundException e)
 			{
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				Log.e(TAG, "WTF. Script not found!");
+				// TODO Add an alert msg
+        		root.disconnect();
+        		finish();
 			}
 	        
         	byte[] aBinData = new byte[(int)binCopy.length()];
         	DataInputStream dis = new DataInputStream(fis);
         	try
 			{
-				dis.readFully(aBinData);
-			} catch (IOException e1)
-			{
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				dis.readFully(aBinData);			
+			} 
+        	catch (IOException e) 
+        	{
+				Log.e(TAG, "Cannot read script file!");
+				// TODO Add an alert msg
+        		root.disconnect();
+        		finish();
 			}
         	
-        	if(aBinData.length == 0) return;
+        	if(aBinData.length == 0) 
+        	{
+        		Log.e(TAG, "Script file is empty!");
+    			//TODO: Add an alert msg
+        		root.disconnect();
+        		finish();
+        	}
 	    	byte[] aFexData = FexUtils.decompileBin(aBinData, aBinData.length);
+	    	
+	    	if(aFexData == null)
+	    	{
+		    	Log.e(TAG,"WTF.Script decompilation error");
+		    	//TODO: Add an alert msg
+		    	root.disconnect();
+		    	finish();
+	    	}
 	        ByteArrayInputStream is = new ByteArrayInputStream(aFexData);
 	        
 	        fScript = new Ini();
@@ -374,6 +410,9 @@ public class MainActivity extends Activity {
 	        } catch (IOException e)	{
 				Log.e(TAG, "Cannot parse decompiled script!");
 				e.printStackTrace();
+				//TODO: Add an alert msg
+				root.disconnect();
+				finish();
 			}
 	
 	        // Generate layout for drawer
@@ -387,10 +426,8 @@ public class MainActivity extends Activity {
 	        	String szSection = it.next();
 	        	mSections[i] = new DrawerEntry(R.drawable.ic_launcher, szSection , fScript.get(szSection).size());
 	        }
-	        
-	        	
 	  
-	        DrawerAdapter da = new DrawerAdapter(this, R.layout.main_layout_drawer_item, mSections);
+	        da = new DrawerAdapter(this, R.layout.main_layout_drawer_item, mSections);
 	             
 	        mDrawerList.setAdapter(da);
 	        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
@@ -416,7 +453,6 @@ public class MainActivity extends Activity {
 	        getActionBar().setHomeButtonEnabled(true);
 	        
 	        
-	       // findViewById(R.id.content_frame);
 	       root.disconnect();
        }
        else
@@ -527,6 +563,4 @@ public class MainActivity extends Activity {
         }
         return super.onOptionsItemSelected(item);
     }
-
-  
 } 

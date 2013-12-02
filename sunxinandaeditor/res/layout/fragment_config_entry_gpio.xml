@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!-- 
+   Copyright 2013 Bartosz Jankowski
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+ -->
+   
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/entry_gpio"
     android:layout_width="fill_parent"
@@ -12,8 +28,7 @@
         android:layout_height="wrap_content"
         android:layout_marginLeft="100dp"
         android:gravity="left"
-        android:minWidth="200dp"
-        android:text="Entry" />
+        android:minWidth="200dp"/>
 
     <EditText
         android:id="@+id/e_port"
@@ -21,15 +36,16 @@
         android:layout_height="wrap_content"
         android:autoLink="none"
         android:gravity="left"
-        android:inputType="text"
+        android:hint="Port to configure (ie. PH15)"
         android:maxLength="8"
         android:maxLines="1"
-        android:singleLine="true" />
+        android:singleLine="true" />  
     <EditText
         android:id="@+id/e_function"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:autoLink="none"
+        android:hint="Function to configure the port for, mux 0 is as input, mux 1 as output"
         android:gravity="left"
         android:maxLength="8"
         android:maxLines="1"
@@ -39,6 +55,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:autoLink="none"
+        android:hint="Pull up/Pull down. 0 = disabled; 1 = pullup enabled; 2 = pulldown enabled (only valid when port is an input)"
         android:gravity="left"
         android:maxLength="8"
         android:maxLines="1"
@@ -48,6 +65,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:autoLink="none"
+        android:hint="Defines the output drive in mA, values are 0-3 corresponding to 10mA, 20mA, 30mA and 40mA"
         android:gravity="left"
         android:maxLength="8"
         android:maxLines="1"
@@ -57,6 +75,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:autoLink="none"
+        android:hint="Sets the initial output level for the port; 0 = low; 1 = high (only valid for outputs)"
         android:gravity="left"
         android:maxLength="8"
         android:maxLines="1"

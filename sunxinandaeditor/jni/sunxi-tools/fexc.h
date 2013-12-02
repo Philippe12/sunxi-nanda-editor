@@ -31,12 +31,4 @@ enum script_format {
 	BIN_SCRIPT_FORMAT
 };
 
-int script_parse(enum script_format format,
-			       const char *filename,
-			       struct script *script);
-
-int script_generate(enum script_format format,
-				  const char *filename,
-				  struct script *script);
-
 #endif
