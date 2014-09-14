@@ -47,9 +47,6 @@ public class MainActivity extends Activity
 {
   final static String TAG = "AWSE";
 
-  final static int AWSE_DIALOG_WAIT = 0;
-  final static int AWSE_DIALOG_ERROR = 1;
-
   private Boolean bReloading = false;
   private MenuItem mStatusAction;
   private DrawerLayout mDrawerLayout;
@@ -63,7 +60,7 @@ public class MainActivity extends Activity
 
   public Ini fScript;
 
-	@Override
+ 	@Override
 	protected void onStop()
 	{
         Helpers.unmountLoader(mRoot);
@@ -84,22 +81,20 @@ public class MainActivity extends Activity
         super.onDestroy();
     }
     @Override
-    public void onCreate(Bundle savedInstanceState) 
-    {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-       // Crashlytics.start(this);
+        // Crashlytics.start(this);
         setContentView(R.layout.main_layout_drawer);
         final ActionBar actionBar = getActionBar();
-        
+
         actionBar.setTitle(R.string.app_name);
         actionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_HOME
                 | ActionBar.DISPLAY_SHOW_TITLE | ActionBar.DISPLAY_SHOW_CUSTOM);
-        
+
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         mDrawerList = (ListView) findViewById(R.id.left_drawer);
 
         // Check root access...
-
         if (mRoot.connect()) {
             if (!mRoot.isRoot()) {
                 final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
@@ -131,74 +126,69 @@ public class MainActivity extends Activity
         }
 
         //Check if it's an Allwinner CPU
-
-
-        if(!Build.HARDWARE.equals("sun3i") && !Build.HARDWARE.equals("sun4i") && !Build.HARDWARE.equals("sun5i") &&
+        if (!Build.HARDWARE.equals("sun3i") && !Build.HARDWARE.equals("sun4i") && !Build.HARDWARE.equals("sun5i") &&
                 !Build.HARDWARE.equals("sun6i") && !Build.HARDWARE.equals("sun7i") && !Build.HARDWARE.equals("sun8i")) {
             Log.e(TAG, "Unknown hardware '" + Build.HARDWARE + "' ! Are you sure it's an Allwinner device?");
             FragmentTransaction ft = getFragmentManager().beginTransaction();
             ft.setTransition(ft.TRANSIT_FRAGMENT_FADE);
 
-           MADialogFragment alert = MADialogFragment.newInstance("Error", "Unknown hardware detected. Further actions may damage device.\nDo you want to continue?", MADialogFragment.UI_DIALOG_YESNO, new DialogInterface.OnClickListener() {
+            MADialogFragment alert = MADialogFragment.newInstance("Error", "Unknown hardware detected. Further actions may damage device.\nDo you want to continue?", MADialogFragment.UI_DIALOG_YESNO, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     if (which == DialogInterface.BUTTON_NEGATIVE) {
-                       finish();
-                    }
-                    else
-                    {
+                        finish();
+                    } else {
                         //Prepare UI
                         new InitUITask(mContext, mRoot, getFragmentManager()).execute();
                     }
                 }
             });
             alert.show(ft, "dialog");
-        }
-        else
-        {
+        } else {
             new InitUITask(mContext, mRoot, getFragmentManager()).execute();
         }
 
-            fScript = new Ini();
-          // Generate layout for drawer
-	        mSections = new DrawerEntry[fScript.size()];
-	        Set<String> names = fScript.keySet();
-	        
-	        Iterator<String> it = names.iterator();
-	        
-	        for(int i = 0; it.hasNext(); ++i)
-	        {
-	        	String szSection = it.next();
-	        	mSections[i] = new DrawerEntry(R.drawable.ic_launcher, szSection , fScript.get(szSection).size());
-	        }
-	  
-	        da = new DrawerAdapter(this, R.layout.main_layout_drawer_item, mSections);
-	             
-	        mDrawerList.setAdapter(da);
-	        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
-	        
-	        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.drawable.ic_drawer, R.string.drawer_open, R.string.drawer_close) {
-	
-	            public void onDrawerOpened(View drawerView) {
-	                getActionBar().setTitle("Select a section");  
-	            }
-	            
-	            public void onDrawerClosed(View view) {
-	            	if(szTitle == null)
-	            		getActionBar().setTitle(R.string.app_name);
-	            	else
-	            		getActionBar().setTitle(szTitle);
-	            }
-	        };
-	
-	        // Set the drawer toggle as the DrawerListener
-	        mDrawerLayout.setDrawerListener(mDrawerToggle);
-	
-	        getActionBar().setDisplayHomeAsUpEnabled(true);
-	        getActionBar().setHomeButtonEnabled(true);
+        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.drawable.ic_drawer, R.string.drawer_open, R.string.drawer_close) {
+
+            public void onDrawerOpened(View drawerView) {
+                getActionBar().setTitle("Select a section");
+            }
+
+            public void onDrawerClosed(View view) {
+                if (szTitle == null)
+                    getActionBar().setTitle(R.string.app_name);
+                else
+                    getActionBar().setTitle(szTitle);
+            }
+        };
+
+        // Set the drawer toggle as the DrawerListener
+        mDrawerLayout.setDrawerListener(mDrawerToggle);
+
+        getActionBar().setDisplayHomeAsUpEnabled(true);
+        getActionBar().setHomeButtonEnabled(true);
 
     }
-    
+
+    public void updateAdapter(Ini ini)
+    {
+        fScript = ini;
+        // Generate layout for drawer
+        mSections = new DrawerEntry[fScript.size()];
+
+        int i = 0;
+        for (String n : fScript.keySet())
+        {
+            mSections[i] = new DrawerEntry(R.drawable.ic_launcher, n, fScript.get(n).size());
+            ++i;
+        }
+
+        da = new DrawerAdapter(this, R.layout.main_layout_drawer_item, mSections);
+
+        mDrawerList.setAdapter(da);
+        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
+    }
+
     private class DrawerItemClickListener implements ListView.OnItemClickListener
     {
         @Override

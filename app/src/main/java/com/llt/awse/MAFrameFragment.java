@@ -43,29 +43,28 @@ public class MAFrameFragment extends Fragment {
 	private EntryAdapter mHost;
 	private ListView aListView;
 	
-	private final String TAG = "AWSE";
-      
-      private interface ScriptEntry {}
-      
-      private class TextEntry implements ScriptEntry
-      {
-         String szKey;
-         String szValue;
-      }
-      
-      private class IntEntry extends TextEntry {}
+	private final static String TAG = "AWSE";
 
-      private class GpioEntry implements ScriptEntry
-      {
-          String szKey;
-    	  String szPort;
-    	  String szFunction;
-    	  String szResistance;
-    	  String szDriveStrength;
-    	  String szOutputLevel;       
-      }
-	  
-      
+    public interface ScriptEntry {}
+
+    public class TextEntry implements ScriptEntry
+    {
+        String szKey;
+        String szValue;
+    }
+
+    private class IntEntry extends TextEntry {}
+
+    private class GpioEntry implements ScriptEntry
+    {
+        String szKey;
+        String szPort;
+        String szFunction;
+        String szResistance;
+        String szDriveStrength;
+        String szOutputLevel;
+    }
+
 	private class EntryAdapter extends BaseAdapter
 	{
 

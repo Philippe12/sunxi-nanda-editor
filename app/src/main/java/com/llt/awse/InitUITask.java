@@ -31,6 +31,7 @@ public class InitUITask extends AsyncTask<Void, Integer, Integer>
 
     final private Context mContext;
     final private RootFW mRoot;
+    private Ini mScript;
     final private FragmentManager mFragmentManager;
 
     final static int UI_DIALOG_FAILED_REMOUNT_ROOT = 0;
@@ -39,6 +40,7 @@ public class InitUITask extends AsyncTask<Void, Integer, Integer>
     final static int UI_DIALOG_FAILED_TO_BACKUP_SCRIPT = 3;
     final static int UI_DIALOG_FAILED_BAD_SCRIPT = 4;
     final static int UI_DIALOG_PROCESSING = 5;
+    final static int UI_DIALOG_READING_SECTION = 6;
 
     final static int UI_DIALOG_INIT_OK = 100;
 
@@ -58,8 +60,10 @@ public class InitUITask extends AsyncTask<Void, Integer, Integer>
 
     @Override
     protected void onPostExecute(Integer errCode) {
-        if(errCode == UI_DIALOG_INIT_OK)
+        if(errCode == UI_DIALOG_INIT_OK) {
             hideDialog();
+            ((MainActivity) mContext).updateAdapter(mScript);
+        }
         else {
             showDialog(errCode);
         }
@@ -80,8 +84,11 @@ public class InitUITask extends AsyncTask<Void, Integer, Integer>
             ft.remove(alert);
             switch (type)
             {
+                case UI_DIALOG_READING_SECTION:
+                    alert = MADialogFragment.newInstance("Please wait", "Reading sections...", MADialogFragment.UI_DIALOG_PROCESSING, null);
+                    break;
                 case UI_DIALOG_PROCESSING:
-                    alert = MADialogFragment.newInstance("Please wait", "Examining hardware...", MADialogFragment.UI_DIALOG_PROCESSING, lExitDialog);
+                    alert = MADialogFragment.newInstance("Please wait", "Examining hardware...", MADialogFragment.UI_DIALOG_PROCESSING, null);
                     break;
                 case UI_DIALOG_FAILED_REMOUNT_ROOT:
                     alert = MADialogFragment.newInstance("Error", "Failed to remount root directory", MADialogFragment.UI_DIALOG_ERROR, lExitDialog);
@@ -123,8 +130,23 @@ public class InitUITask extends AsyncTask<Void, Integer, Integer>
         showDialog(msgId);
      }
 
+
+    private Integer getScriptAlternative()
+    {
+        Ini ini = new Ini();
+        publishProgress(UI_DIALOG_READING_SECTION);
+        for(String section : Helpers.mScriptSections) {
+            Helpers.getScriptSection(mRoot, section, ini);
+        }
+        mScript = ini;
+        return UI_DIALOG_INIT_OK;
+    }
+
+
     @Override
     protected Integer doInBackground(Void... args) {
+
+        Boolean isScriptDumpAvailable =  mRoot.file("/sys/class/script/dump").exists();   // Use for Boot 2.0
 
         if (mRoot.filesystem("rootfs").addMount("/", new String[]{"rw", "remount"})) {
             Log.i(TAG, "Succesfully remounted root dir!");
@@ -146,21 +168,22 @@ public class InitUITask extends AsyncTask<Void, Integer, Integer>
         else
         {
             Log.e(TAG,"Failed to mount bootloader partition...");
-            return UI_DIALOG_FAILED_MOUNT_LOADER;
+            return isScriptDumpAvailable ? getScriptAlternative() : UI_DIALOG_FAILED_MOUNT_LOADER;
         }
 
         FileExtender.File fBin = mRoot.file("/mnt/awse/script.bin");
-        FileExtender.File fDumper = mRoot.file("/sys/class/script/dump");   // Use for Boot 2.0
+
         if(!fBin.exists())
         {
-            if(!fDumper.exists()) {
+            if(!isScriptDumpAvailable) {
                 mRoot.shell().run("rmdir /mnt/awse");
                 return UI_DIALOG_FAILED_SCRIPT_NOT_FOUND;
             }
             Log.v(TAG, "Script.bin doesn't exist. Trying alternative method...");
 
+            return getScriptAlternative();
         }
-        else {
+
             if (fBin.copy(Environment.getExternalStorageDirectory().getPath() + "/awse/script.bin", true)) {
                 Log.i(TAG, "Successfully copied script to sdcard");
                 Helpers.unmountLoader(mRoot);
@@ -197,18 +220,16 @@ public class InitUITask extends AsyncTask<Void, Integer, Integer>
                 return UI_DIALOG_FAILED_BAD_SCRIPT;
             }
             ByteArrayInputStream is = new ByteArrayInputStream(aFexData);
-/*
-        fScript = new Ini();
+
+        mScript = new Ini();
         try
         {
-            fScript.load(is);
+            mScript.load(is);
         } catch (IOException e)	{
             Log.e(TAG, "Cannot parse decompiled script!");
-            e.printStackTrace();
-            finish();
+            return UI_DIALOG_FAILED_BAD_SCRIPT;
         }
-        */
-        }
+
         return UI_DIALOG_INIT_OK;
     }
 }

@@ -19,6 +19,10 @@ import android.os.Environment;
 import android.util.Log;
 
 import com.spazedog.lib.rootfw3.RootFW;
+import com.spazedog.lib.rootfw3.extenders.FileExtender;
+
+import org.ini4j.Ini;
+import org.ini4j.Profile;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,7 +30,12 @@ import java.util.regex.Pattern;
 public class Helpers
 {
     final private static String TAG = "AWSE";
-	final private static Pattern pRegEx = Pattern.compile("^port:(.*)<(.*)><(.*)><(.*)><(.*)>$");
+    final private static Pattern regIniGpio = Pattern.compile("^port:(.*)<(.*)><(.*)><(.*)><(.*)>$");
+
+    final private static Pattern regScriptGpio = Pattern.compile("^\\s*(\\w*)\\s*gpio.*\\(gpio:\\s*(.+), mul:\\s*(.+), pull\\s*(.+), drv\\s*(.+), data\\s*(.+)\\).*$");
+    final private static Pattern regScriptInt = Pattern.compile("^\\s*(\\w*)\\s*string.*(\".*\")$");
+    final private static Pattern regScriptString = Pattern.compile("^\\s*(\\w*)\\s*int\\s*(.*)$");
+    final private static Pattern regScriptInvalid = Pattern.compile("^\\s*(\\w+)\\s*invalid\\s*(.*)$");
 
 
     // List of all known to me sections
@@ -46,7 +55,19 @@ public class Helpers
             "uart_para5", "uart_para6", "uart_para7", "uart_para", "usb_feature", "usb_wifi_para", "usbc0", "usbc1", "usbc2",
             "vip0_para", "vip1_para", "wifi_para"};
 
-    static String[] getScriptSection(final RootFW root, final String section)
+    /*
+        Convert gpio abs val to name eg. 186 -> PM00
+     */
+    static String getGpioByNumber(int number)
+    {
+        //TODO: Examine how to convert number to string
+        return "?";
+    }
+
+    /*
+        Get section
+     */
+    static void getScriptSection(final RootFW root, final String section, Ini ini)
     {
         /*
         ++++++++++++++++++++++++++__sysfs_dump_mainkey++++++++++++++++++++++++++
@@ -67,17 +88,55 @@ public class Helpers
                ap6xxx_clk_powerstring    "axp22_dldo4"
 --------------------------__sysfs_dump_mainkey--------------------------
          */
-        return null;
+        FileExtender.File file = root.file("/sys/class/script/dump");
+
+        file.write(section);
+        FileExtender.FileData data = file.read();
+        if(data.size() == 0)
+            return;
+
+        //Log.e(TAG, "Parsing: " + section);
+        Profile.Section s = ini.add(section);
+        for(String line : data.getArray())
+        {
+            Matcher m = regScriptGpio.matcher(line);
+            if(m.find())
+            {
+                String gpio = String.format("port:%s<%s><%s><%s><%s>", getGpioByNumber(Integer.parseInt(m.group(2))),
+                        (m.group(3).equals("-1") ? "default" : m.group(3)),  (m.group(4).equals("-1") ? "default" : m.group(4)),
+                        (m.group(5).equals("-1") ? "default" : m.group(5)),  (m.group(6).equals("-1") ? "default" : m.group(6)));
+                s.add(m.group(1), gpio);
+                continue;
+            }
+            m = regScriptInt.matcher(line);
+            if(m.find())
+            {
+                s.add(m.group(1), m.group(2));
+                continue;
+            }
+            m = regScriptString.matcher(line);
+            if(m.find())
+            {
+                s.add(m.group(1), m.group(2));
+                continue;
+            }
+            m = regScriptInvalid.matcher(line);
+            if(m.find())
+            {
+                s.add(m.group(1), "");
+                continue;
+            }
+        }
     }
 
 	static boolean isPortEntry(String val)
 	{
-		return pRegEx.matcher(val).find();
+		return regIniGpio.matcher(val).find();
 	}
 	
 	static String[] getPortValues(String val)
 	{
-		Matcher m = pRegEx.matcher(val);
+		Matcher m = regIniGpio.matcher(val);
 		String[] ret = new String[5];
 		if(m.find())
 		{
