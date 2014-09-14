@@ -1,0 +1,37 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 19
+    buildToolsVersion "19.1.0"
+
+    defaultConfig {
+        applicationId "com.llt.awse"
+        minSdkVersion 15
+        targetSdkVersion 19
+
+        ndk {
+            moduleName "libsunxi-tools"
+            abiFilter "armeabi-v7a"
+            ldLibs "log"
+            cFlags "-std=c99 -D_POSIX_C_SOURCE=200112L"
+        }
+    }
+
+    sourceSets.main {
+        jniLibs.srcDir 'src/main/libs'
+    }
+
+    buildTypes {
+        release {
+            runProguard false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+}
+
+dependencies {
+    compile 'com.android.support:support-v4:19.+'
+    compile files('libs/crashlytics.jar')
+    compile files('libs/ini4j-0.5.2.jar')
+    compile files('libs/rootfw.jar')
+}
