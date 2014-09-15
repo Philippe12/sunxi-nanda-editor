@@ -60,7 +60,26 @@ public class Helpers
      */
     static String getGpioByNumber(int number)
     {
-        //TODO: Examine how to convert number to string
+        final int[] Banks = {30, 10, 30, 30, 19, 8,  21, 33, 0, 0, 0, 11, 10};
+        //                   PA, PB, PC, PD, PE, PF, PG, PH, PI, PJ, PK, PL, PM
+
+        int bank = 0;
+        for(int i = 0; i < Banks.length; ++i)
+        {
+            if(number<bank + Banks[i])
+            {
+                int gpio = number - bank;
+                char cBank = (char)(65+ i);
+                return String.format("P%c%02d", cBank, gpio);
+            }
+
+            bank += Banks[i];
+        }
+        if(number> 202)
+        {
+            int gpio = number - 202;
+            return String.format("power%d", gpio);
+        }
         return "?";
     }
 
@@ -99,7 +118,13 @@ public class Helpers
         Profile.Section s = ini.add(section);
         for(String line : data.getArray())
         {
-            Matcher m = regScriptGpio.matcher(line);
+            Matcher m = regScriptInvalid.matcher(line);
+            if(m.find())
+            {
+                s.add(m.group(1), "");
+                continue;
+            }
+            m = regScriptGpio.matcher(line);
             if(m.find())
             {
                 String gpio = String.format("port:%s<%s><%s><%s><%s>", getGpioByNumber(Integer.parseInt(m.group(2))),
@@ -120,12 +145,7 @@ public class Helpers
                 s.add(m.group(1), m.group(2));
                 continue;
             }
-            m = regScriptInvalid.matcher(line);
-            if(m.find())
-            {
-                s.add(m.group(1), "");
-                continue;
-            }
+
         }
     }
 
