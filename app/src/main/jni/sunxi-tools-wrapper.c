@@ -37,9 +37,19 @@
 #define  LOGW(...)  __android_log_print(ANDROID_LOG_WARN,LOG_TAG,__VA_ARGS__)
 
 JNIEXPORT jobjectArray JNICALL Java_com_llt_awse_FexUtils_compileFex
-  (JNIEnv * env , jclass jclass , jobject arg)
+  (JNIEnv * env , jclass jclass , jcharArray fex, jint fex_size)
 {
-    //TOOD: Add code
+    /*jchar* buffer = (*env)->GetCharArrayElements(env, fex, NULL);
+    char* inputBytes = malloc((int)fex_size * sizeof(char));
+
+    script_generate_fex()
+
+
+    jbyteArray result = (*env)->NewByteArray(env, final_size);
+    (*env)->SetByteArrayRegion(env, result, 0, final_size, (jbyte*)final_out);
+
+    free(inputBytes);
+	return result;*/
 	return 0;
 }
 

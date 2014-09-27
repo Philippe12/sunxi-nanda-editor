@@ -24,6 +24,14 @@ import com.spazedog.lib.rootfw3.extenders.FileExtender;
 import org.ini4j.Ini;
 import org.ini4j.Profile;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.IllegalFormatConversionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,8 +41,8 @@ public class Helpers
     final private static Pattern regIniGpio = Pattern.compile("^port:(.*)<(.*)><(.*)><(.*)><(.*)>$");
 
     final private static Pattern regScriptGpio = Pattern.compile("^\\s*(\\w*)\\s*gpio.*\\(gpio:\\s*(.+), mul:\\s*(.+), pull\\s*(.+), drv\\s*(.+), data\\s*(.+)\\).*$");
-    final private static Pattern regScriptInt = Pattern.compile("^\\s*(\\w*)\\s*string.*(\".*\")$");
-    final private static Pattern regScriptString = Pattern.compile("^\\s*(\\w*)\\s*int\\s*(.*)$");
+    final private static Pattern regScriptString = Pattern.compile("^\\s*(\\w*)\\s*string.*(\".*\")$");
+    final private static Pattern regScriptInt = Pattern.compile("^\\s*(\\w*)\\s*int\\s*(.*)$");
     final private static Pattern regScriptInvalid = Pattern.compile("^\\s*(\\w+)\\s*invalid\\s*(.*)$");
 
 
@@ -60,8 +68,8 @@ public class Helpers
      */
     static String getGpioByNumber(int number)
     {
-        final int[] Banks = {30, 10, 30, 30, 19, 8,  21, 33, 0, 0, 0, 11, 10};
-        //                   PA, PB, PC, PD, PE, PF, PG, PH, PI, PJ, PK, PL, PM
+        final int[] Banks = {30, 10, 30, 30, 19, 8,  21, 33, 0,    0,    0,    11, 10};
+        //                   PA, PB, PC, PD, PE, PF, PG, PH, [PI], [PJ], [PK], PL, PM
 
         int bank = 0;
         for(int i = 0; i < Banks.length; ++i)
@@ -114,7 +122,6 @@ public class Helpers
         if(data.size() == 0)
             return;
 
-        //Log.e(TAG, "Parsing: " + section);
         Profile.Section s = ini.add(section);
         for(String line : data.getArray())
         {
@@ -136,7 +143,15 @@ public class Helpers
             m = regScriptInt.matcher(line);
             if(m.find())
             {
-                s.add(m.group(1), m.group(2));
+                //Convert to hex
+                try {
+                    int hexInt = Integer.parseInt(m.group(2));
+                    s.add(m.group(1), "0x" + Integer.toHexString(hexInt));
+                } catch(NumberFormatException e)
+                {
+                    Log.e(TAG, "Failed to parse integer of " + m.group(1) + ", value to parse: " + m.group(2));
+                    s.add(m.group(1), "0");
+                }
                 continue;
             }
             m = regScriptString.matcher(line);
@@ -187,6 +202,75 @@ public class Helpers
         else {
             Log.v(TAG, "Skipping unmount routine, cause loader isn't mounted");
         }
+    }
+
+    static void exportIni(final Ini ini, String name, final File path) throws IOException {
+        File f = null;
+
+        if(name.toLowerCase().endsWith(".fex"))
+        {
+            name = name.substring(0, name.length() - 4);
+        }
+
+        try {
+            f = new File(path, name + ".fex");
+            if(!f.exists())
+                f.createNewFile();
+        }
+        catch(IOException e)
+        {
+            Log.e(TAG, "Failed to create file '" + path + "/" + name + ".fex :" + e);
+            throw e;
+        }
+        finally {
+                try {
+                    ini.store(f);
+                } catch (IOException e) {
+                    f.delete();
+                    Log.e(TAG, "Failed to write ini: " + e);
+                    throw e;
+                }
+        }
+        Log.v(TAG, "Succesfully stored FEX to: " + path + "/" + name + ".fex :");
+    }
+
+    static void exportBin(final Ini ini, String name, final File path) throws IOException {
+        File f = null;
+
+        if(name.toLowerCase().endsWith(".bin"))
+        {
+            name = name.substring(0, name.length() - 4);
+        }
+
+        try {
+            f = new File(path, name + ".bin");
+            if(!f.exists())
+                f.createNewFile();
+        }
+        catch(IOException e)
+        {
+            Log.e(TAG, "Failed to create file '" + path + "/" + name + ".fex :" + e);
+            throw e;
+        }
+        finally {
+
+            byte[] output = FexUtils.compileFex(ini.toString().toCharArray(), ini.toString().getBytes().length);
+            if(output == null)
+            {
+                throw new RuntimeException("Fex compilation failed");
+            }
+            try {
+                FileOutputStream fis = new FileOutputStream(f);
+                fis.write(output);
+                fis.flush();
+                fis.close();
+            } catch (IOException e) {
+                f.delete();
+                Log.e(TAG, "Failed to write bin: " + e);
+                throw e;
+            }
+        }
+        Log.v(TAG, "Succesfully stored FEX to: " + path + "/" + name + ".fex :");
     }
 
 

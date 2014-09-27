@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Bartosz Jankowski
+ * Copyright 2013-2014 Bartosz Jankowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +16,46 @@
 
 package com.llt.awse;
 
+import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DialogFragment;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.widget.DrawerLayout;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.spazedog.lib.rootfw3.RootFW;
 
 import org.ini4j.Ini;
+import com.readystatesoftware.systembartint.SystemBarTintManager;
 
-import java.util.Iterator;
-import java.util.Set;
+import java.io.File;
+import java.io.IOException;
+
 
 public class MainActivity extends Activity
 {
@@ -84,7 +98,9 @@ public class MainActivity extends Activity
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Crashlytics.start(this);
+
         setContentView(R.layout.main_layout_drawer);
+
         final ActionBar actionBar = getActionBar();
 
         actionBar.setTitle(R.string.app_name);
@@ -95,11 +111,27 @@ public class MainActivity extends Activity
         mDrawerList = (ListView) findViewById(R.id.left_drawer);
 
         // Check root access...
-        if (mRoot.connect()) {
-            if (!mRoot.isRoot()) {
+        if(!mRoot.isConnected())
+            if (mRoot.connect()) {
+                if (!mRoot.isRoot()) {
+                    final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+                    alertDialog.setTitle("Error!");
+                    alertDialog.setMessage("App needs root access to work!");
+                    alertDialog.setButton(DialogInterface.BUTTON_NEUTRAL, "OK", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            alertDialog.dismiss();
+                            finish();
+                        }
+                    });
+                    alertDialog.show();
+                    return;
+                }
+            } else {
+                Log.e(TAG, "WTF. Couldn't connect to RootTools!");
                 final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
-                alertDialog.setTitle("Error!");
-                alertDialog.setMessage("App needs root access to work!");
+                alertDialog.setTitle("WTF!");
+                alertDialog.setMessage("Cant connect to RootTools!");
                 alertDialog.setButton(DialogInterface.BUTTON_NEUTRAL, "OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -108,22 +140,7 @@ public class MainActivity extends Activity
                     }
                 });
                 alertDialog.show();
-                return;
             }
-        } else {
-            Log.e(TAG, "WTF. Couldn't connect to RootTools!");
-            final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
-            alertDialog.setTitle("WTF!");
-            alertDialog.setMessage("Cant connect to RootTools!");
-            alertDialog.setButton(DialogInterface.BUTTON_NEUTRAL, "OK", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    alertDialog.dismiss();
-                    finish();
-                }
-            });
-            alertDialog.show();
-        }
 
         //Check if it's an Allwinner CPU
         if (!Build.HARDWARE.equals("sun3i") && !Build.HARDWARE.equals("sun4i") && !Build.HARDWARE.equals("sun5i") &&
@@ -145,7 +162,7 @@ public class MainActivity extends Activity
             });
             alert.show(ft, "dialog");
         } else {
-            new InitUITask(mContext, mRoot, getFragmentManager()).execute();
+               new InitUITask(mContext, mRoot, getFragmentManager()).execute();
         }
 
         mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.drawable.ic_drawer, R.string.drawer_open, R.string.drawer_close) {
@@ -168,6 +185,15 @@ public class MainActivity extends Activity
         getActionBar().setDisplayHomeAsUpEnabled(true);
         getActionBar().setHomeButtonEnabled(true);
 
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+           setTranslucent(true);
+
+        }
+
+        SystemBarTintManager tintManager = new SystemBarTintManager(this);
+        tintManager.setStatusBarTintEnabled(true);
+        tintManager.setStatusBarTintColor(getResources().getColor(R.color.actionbar_background_dark));
     }
 
     public void updateAdapter(Ini ini)
@@ -184,9 +210,12 @@ public class MainActivity extends Activity
         }
 
         da = new DrawerAdapter(this, R.layout.main_layout_drawer_item, mSections);
-
         mDrawerList.setAdapter(da);
         mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
+
+        SystemBarTintManager tintManager = new SystemBarTintManager(this);
+        SystemBarTintManager.SystemBarConfig config = tintManager.getConfig();
+        mDrawerList.setPadding(mDrawerList.getPaddingLeft(), config.getPixelInsetTop(true), mDrawerList.getPaddingRight(), config.getPixelInsetBottom());
     }
 
     private class DrawerItemClickListener implements ListView.OnItemClickListener
@@ -213,7 +242,8 @@ public class MainActivity extends Activity
         mDrawerToggle.onConfigurationChanged(newConfig);
     }
 
-    private void selectItem(int position) {
+    private void selectItem(int position)
+    {
         // Create a new fragment and specify the planet to show based on position
         Fragment fragment = new MAFrameFragment();
         Bundle args = new Bundle();
@@ -241,7 +271,6 @@ public class MainActivity extends Activity
     
     
 // Right corner menu stuff...
-    
     @Override
     public boolean onCreateOptionsMenu(Menu menu)
     {
@@ -256,6 +285,12 @@ public class MainActivity extends Activity
           return true;
         switch(item.getItemId())
         {
+            case R.id.menu_about:
+                showAboutDialog();
+            break;
+            case R.id.menu_saveas:
+                showExportDialog();
+                break;
             case R.id.menu_exit:
                 finish();
                 break;
@@ -268,15 +303,88 @@ public class MainActivity extends Activity
             		mStatusAction.expandActionView();
             		bReloading = true;
             	}
-            	else
-            	{
-            		mStatusAction.setVisible(false);
-            		mStatusAction.collapseActionView();
-            		bReloading = false;
-            	}
                 break;
         }
         return super.onOptionsItemSelected(item);
     }
 
+    private void showAboutDialog()
+    {
+        String version;
+        try {
+            version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            version = "?";
+        }
+
+        FragmentTransaction ft = getFragmentManager().beginTransaction();
+        MADialogFragment alert = MADialogFragment.newInstance(getString(R.string.app_name),
+                "<p><b>AW-SE</b> version " + version +  " (c) Bartosz Jankowski" +
+                "<p>Disclaimer: Inappropriate use of this application may be lead to damage of the device. I don't take responsibility " +
+                        "for any defects done by this application. <b>You use it at own risk</b></p>" +
+                "<p>This program uses" +
+                "<div>\t• sunxi-tools (c) Alejandro Mery <a href='https://github.com/linux-sunxi/sunxi-tools'>GitHub</a></div>" +
+                "<div>\t• ini4j (c) Ivan Szkiba <a href='http://ini4j.sourceforge.net'>SourceForge</a></div>" +
+                "<div>\t• SystemBarTint (c) Jeff Gilfelt <a href='https://github.com/jgilfelt/SystemBarTint'>GitHub</a></div>" +
+                "<div>\t• RootFW (c) Daniel Bergløv <a href='https://github.com/SpazeDog/rootfw'>GitHub</a></div>" +
+                "</p>"
+                , MADialogFragment.UI_DIALOG_ABOUT, null);
+        alert.show(ft, "dialog");
+    }
+
+    private void showExportDialog()
+    {
+        FragmentTransaction ft = getFragmentManager().beginTransaction();
+        MADialogFragment alert = MADialogFragment.newInstance(Environment.getExternalStorageDirectory().getAbsolutePath(), null, MADialogFragment.UI_DIALOG_SAVE, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MADialogFragment alert = (MADialogFragment) getFragmentManager().findFragmentByTag("dialog");
+                switch(v.getId()) {
+                    case R.id.awse_save_dialog_button_cancel:
+                        alert.dismiss();
+                        break;
+                    case R.id.awse_save_dialog_button_save:
+                        final String filename = ((EditText)alert.getDialog().findViewById(R.id.awse_save_dialog_file_name)).getText().toString();
+                        final int type = ((Spinner)alert.getDialog().findViewById(R.id.awse_save_dialog_file_type)).getSelectedItemPosition();
+                        final File path = alert.getCurrentLocation();
+                        alert.dismiss();
+                        if(type == 0) // FEX
+                        {
+                            try {
+                                Helpers.exportIni(fScript, filename, path);
+                                Toast.makeText(alert.getActivity(), "Script has been exported successfully!", Toast.LENGTH_SHORT).show();
+                            } catch (IOException e) {
+                                Log.e(TAG, "Failed to export ini: " + e);
+                            }
+                        }
+                        else    // BIN
+                        {
+                            try {
+                                Helpers.exportBin(fScript, filename, path);
+                            } catch (IOException e) {
+                                Log.e(TAG, "Failed to export bin: " + e);
+                                Toast.makeText(alert.getActivity(), "Script has been exported successfully!", Toast.LENGTH_SHORT).show();
+                            }
+
+                        }
+                        break;
+                }
+            }
+        });
+
+        alert.show(ft, "dialog");
+    }
+
+    @TargetApi(19)
+    private void setTranslucent(boolean on)
+    {
+        Window win = getWindow();
+        WindowManager.LayoutParams winParams = win.getAttributes();
+        if (on) {
+            winParams.flags |= (WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        } else {
+            winParams.flags &= ~(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        }
+        win.setAttributes(winParams);
+    }
 }

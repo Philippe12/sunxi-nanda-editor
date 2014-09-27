@@ -214,16 +214,38 @@ int script_generate_bin(void *bin, size_t UNUSED(bin_size),
 /*
  * decompiler
  */
-static int decompile_section(void *bin, size_t UNUSED(bin_size),
+static int decompile_section(void *bin, size_t bin_size,
 			     const char *filename,
 			     struct script_bin_section *section,
 			     struct script *script)
 {
-	struct script_bin_entry *entry = PTR(bin,  section->offset<<2);
+	struct script_bin_entry *entry;
 	struct script_section *s;
+	int size;
+
+	if ((section->offset < 0) || (section->offset > (int)(bin_size / 4))) {
+		pr_err("Malformed data: invalid section offset: %d\n",
+		       section->offset);
+		return 0;
+	}
+
+	size = bin_size - 4 * section->offset;
+
+	if ((section->length < 0) ||
+	    (section->length > (size / (int)sizeof(struct script_bin_entry)))) {
+		pr_err("Malformed data: invalid section (%s) length: %d\n", section->name,
+		       section->length);
+		return 0;
+	}
+	else if (section->length == 0) {
+		pr_info("Omitting empty section: %s\n", section->name);
+		return 1;
+	}
 
 	if ((s = script_section_new(script, section->name)) == NULL)
 		goto malloc_error;
+
+	entry = PTR(bin, section->offset<<2);
 
 	for (int i = section->length; i--; entry++) {
 		void *data = PTR(bin, entry->offset<<2);
@@ -275,7 +297,8 @@ static int decompile_section(void *bin, size_t UNUSED(bin_size),
 						   v))
 				goto malloc_error;
 			}; break;
-		case SCRIPT_VALUE_TYPE_NULL:
+		case SCRIPT_VALUE_TYPE_NULL:	// decompiling null entry makes no sense if it has no name
+			if(*entry->name)
 			if (!script_null_entry_new(s, entry->name))
 				goto malloc_error;
 			break;
@@ -292,6 +315,8 @@ malloc_error:
 failure:
 	return 0;
 }
+#define SCRIPT_BIN_VERSION_LIMIT 0x10
+#define SCRIPT_BIN_SECTION_LIMIT 0x100
 
 int script_decompile_bin(void *bin, size_t bin_size,
 			 const char *filename,
@@ -305,6 +330,20 @@ int script_decompile_bin(void *bin, size_t bin_size,
 		head->version[2]);
 	pr_info("%s: size: %zu (%d sections)\n", filename,
 		bin_size, head->sections);
+
+	if (head->sections > SCRIPT_BIN_SECTION_LIMIT) {
+		pr_err("Malformed data: too many sections (%d).\n",
+		       head->sections);
+		return 0;
+	}
+
+	if ((head->version[0] > SCRIPT_BIN_VERSION_LIMIT) ||
+	    (head->version[1] > SCRIPT_BIN_VERSION_LIMIT) ||
+	    (head->version[2] > SCRIPT_BIN_VERSION_LIMIT)) {
+		pr_err("Malformed data: version %d.%d.%d.\n",
+		       head->version[0], head->version[1], head->version[2]);
+		return 0;
+	}
 
 	/* TODO: SANITY: compare head.sections with bin_size */
 	for (i=0; i < head->sections; i++) {

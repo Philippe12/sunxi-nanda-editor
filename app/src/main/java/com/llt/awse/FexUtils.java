@@ -24,7 +24,7 @@ public class FexUtils
 {
 	final static String TAG = "AWSE.Native";	
 	
-	public static native byte[] compileFex(InputStream file);
+	public static native byte[] compileFex(char[] data, int len);
 	public static native byte[] decompileBin(byte[] data, int len);
 
 	

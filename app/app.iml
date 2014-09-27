@@ -80,10 +80,13 @@
     </content>
     <orderEntry type="jdk" jdkName="Android API 19 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" exported="" name="crashlytics" level="project" />
+    <orderEntry type="library" exported="" name="support-v13-20.0.0" level="project" />
+    <orderEntry type="library" exported="" name="crashlytics-1.1.13" level="project" />
+    <orderEntry type="library" exported="" name="systembartint-1.0.3" level="project" />
     <orderEntry type="library" exported="" name="rootfw" level="project" />
     <orderEntry type="library" exported="" name="ini4j-0.5.2" level="project" />
-    <orderEntry type="library" exported="" name="support-v4-19.0.1" level="project" />
+    <orderEntry type="library" exported="" name="support-annotations-20.0.0" level="project" />
+    <orderEntry type="library" exported="" name="support-v4-20.0.0" level="project" />
   </component>
 </module>
 

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/awse_save_dialog"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+
+    <ListView
+        android:id="@+id/awse_save_dialog_file_list"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.5"
+        android:padding="10dp" />
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="10dp" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:text="Enter file name:"
+            android:textAppearance=
+                "?android:attr/textAppearanceMedium" />
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent">
+
+            <EditText
+            android:id="@+id/awse_save_dialog_file_name"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="Enter file name"
+            android:inputType="text"
+            android:layout_weight="0.2"
+            android:padding="10dp" />
+
+            <Spinner
+                android:id="@+id/awse_save_dialog_file_type"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:layout_weight="0.8"
+                android:gravity="center_vertical|start"
+                android:paddingRight="10dp"
+                android:entries="@array/AWSEExportTypes"
+                android:focusable="true" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" >
+
+
+
+            <Button
+                android:id="@+id/awse_save_dialog_button_cancel"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="10dp"
+                android:text="Cancel" />
+
+            <Button
+                android:id="@+id/awse_save_dialog_button_new_folder"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="New folder"
+                />
+
+            <Button
+                android:id="@+id/awse_save_dialog_button_save"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="10dp"
+                android:text="Export" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

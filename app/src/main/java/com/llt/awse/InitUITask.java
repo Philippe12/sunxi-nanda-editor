@@ -41,6 +41,7 @@ public class InitUITask extends AsyncTask<Void, Integer, Integer>
     final static int UI_DIALOG_FAILED_BAD_SCRIPT = 4;
     final static int UI_DIALOG_PROCESSING = 5;
     final static int UI_DIALOG_READING_SECTION = 6;
+    final static int UI_DIALOG_FAILED_NO_LIBRARY = 7;
 
     final static int UI_DIALOG_INIT_OK = 100;
 
@@ -105,9 +106,16 @@ public class InitUITask extends AsyncTask<Void, Integer, Integer>
                 case UI_DIALOG_FAILED_BAD_SCRIPT:
                     alert = MADialogFragment.newInstance("Error", "Failed to parse the script file", MADialogFragment.UI_DIALOG_ERROR, lExitDialog);
                     break;
+                case UI_DIALOG_FAILED_NO_LIBRARY:
+                    alert = MADialogFragment.newInstance("Error", "Cannot load native library\nPlease copy libsunxi-tools.so to /system/lib/ or reinstall app", MADialogFragment.UI_DIALOG_ERROR, lExitDialog);
+                    break;
             }
         }
-        alert.show(ft, "dialog");
+            try {
+                alert.show(ft, "dialog");
+            } catch(IllegalStateException e) {
+            }
+
     }
 
     private void hideDialog()
@@ -115,7 +123,10 @@ public class InitUITask extends AsyncTask<Void, Integer, Integer>
         MADialogFragment dialog = (MADialogFragment)mFragmentManager.findFragmentByTag("dialog");
         if(dialog != null)
         {
+            try {
             dialog.dismiss();
+            } catch(IllegalStateException e) {
+            }
         }
     }
 
@@ -213,23 +224,29 @@ public class InitUITask extends AsyncTask<Void, Integer, Integer>
                 Log.e(TAG, "Script file is empty!");
                 return UI_DIALOG_FAILED_BAD_SCRIPT;
             }
-            byte[] aFexData = FexUtils.decompileBin(aBinData, aBinData.length);
 
-            if (aFexData == null) {
-                Log.e(TAG, "WTF.Script decompilation error");
-                return UI_DIALOG_FAILED_BAD_SCRIPT;
+            try {
+                byte[] aFexData = FexUtils.decompileBin(aBinData, aBinData.length);
+
+                if (aFexData == null) {
+                    Log.e(TAG, "WTF.Script decompilation error");
+                    return UI_DIALOG_FAILED_BAD_SCRIPT;
+                }
+
+                ByteArrayInputStream is = new ByteArrayInputStream(aFexData);
+
+                mScript = new Ini();
+                try {
+                    mScript.load(is);
+                } catch (IOException e) {
+                    Log.e(TAG, "Cannot parse decompiled script!");
+                    return UI_DIALOG_FAILED_BAD_SCRIPT;
+                }
             }
-            ByteArrayInputStream is = new ByteArrayInputStream(aFexData);
-
-        mScript = new Ini();
-        try
-        {
-            mScript.load(is);
-        } catch (IOException e)	{
-            Log.e(TAG, "Cannot parse decompiled script!");
-            return UI_DIALOG_FAILED_BAD_SCRIPT;
-        }
-
-        return UI_DIALOG_INIT_OK;
+            catch (UnsatisfiedLinkError e)
+            {
+                return UI_DIALOG_FAILED_NO_LIBRARY;
+            }
+            return UI_DIALOG_INIT_OK;
     }
 }

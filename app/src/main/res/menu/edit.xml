@@ -35,12 +35,12 @@
         android:id="@+id/menu_loadsd"
         android:orderInCategory="100"
         android:showAsAction="never"
-        android:title="Import"/>
+        android:title="Import..."/>
     <item
         android:id="@+id/menu_saveas"
         android:orderInCategory="100"
         android:showAsAction="never"
-        android:title="Export"/>
+        android:title="Export..."/>
     <item
         android:id="@+id/menu_about"
         android:orderInCategory="100"

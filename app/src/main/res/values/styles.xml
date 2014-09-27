@@ -1,3 +1,19 @@
+<!--
+  ~ Copyright 2014 Bartosz Jankowski
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
 <resources>
 
     <!--
@@ -5,16 +21,34 @@
         by AppBaseTheme from res/values-vXX/styles.xml on newer devices.
     -->
     <style name="AppBaseTheme" parent="android:Theme.Light">
-        <!--
-            Theme customizations available in newer API levels can go in
-            res/values-vXX/styles.xml, while customizations related to
-            backward-compatibility can go here.
-        -->
     </style>
 
     <!-- Application theme. -->
     <style name="AppTheme" parent="AppBaseTheme">
+        <item name="android:actionBarStyle">@style/AWSEActionBar</item>
+        <item name="android:actionOverflowButtonStyle">@style/AWSEButtonOverflow</item>
         <!-- All customizations that are NOT specific to a particular API-level can go here. -->
+    </style>
+
+    <style name="AWSEActionBar"
+        parent="@android:style/Widget.Holo.Light.ActionBar">
+        <item name="android:background">@color/actionbar_background_dark</item>
+        <item name="android:titleTextStyle">@style/AWSEActionBarTitleText</item>
+    </style>
+
+    <style name="AWSEActionBarTitleText"
+        parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Title">
+        <item name="android:textColor">@color/actionbar_text</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="AWSEButtonOverflow"
+        parent="@android:style/Widget.Holo.ActionButton.Overflow">
+    </style>
+
+    <style name="AWSEDialog" parent="@android:style/Theme.Holo.Light.Dialog">
+        <item name="android:divider">@null</item>
+
     </style>
 
 </resources>

@@ -2,5 +2,8 @@
 <resources>
     <color name="editor_background">#ffececec</color>
     <color name="drawer_background">#bbffeebb</color>
-    
+    <color name="actionbar_background">#99cc00</color>
+    <color name="actionbar_background_dark">#669900</color>
+    <color name="actionbar_text">#ffffffff</color>
+
 </resources>

@@ -23,7 +23,9 @@
     <FrameLayout
         android:id="@+id/content_frame"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="true"
+        android:clipToPadding="true">
     </FrameLayout>
 
     <ListView
@@ -36,6 +38,7 @@
         android:divider="@android:color/transparent"
         android:dividerHeight="0dp"
         android:paddingLeft="15sp"
-        android:paddingRight="5sp" />
+        android:paddingRight="5sp"
+/>
 
 </android.support.v4.widget.DrawerLayout>

@@ -30,6 +30,8 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.readystatesoftware.systembartint.SystemBarTintManager;
+
 import java.util.ArrayList;
 
 public class MAFrameFragment extends Fragment {
@@ -312,4 +314,5 @@ public class MAFrameFragment extends Fragment {
 		hKeys = args.getStringArray(ARG_KEYS);
 		hVals = args.getStringArray(ARG_VALS);
 	}
+
 }
